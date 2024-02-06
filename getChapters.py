@@ -1,17 +1,29 @@
+from youtube_transcript_api import YouTubeTranscriptApi
 from langchain import OpenAI
 from langchain.chains.summarize import load_summarize_chain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain import PromptTemplate
 
 import os
+import sys
 
 # GETTING THE API KEY from os environment
 openai_api_key = os.environ.get('OPENAI_API_KEY')
 
-video_captions = './captions.vtt'
+video_url = sys.argv[1]
+video_id = video_url.split("v=")[1]
 
-with open(video_captions, 'r') as file:
-    captions = file.read()
+print (f"Getting the transcript for the video {video_id}")
+
+captions_yt = YouTubeTranscriptApi.get_transcript(video_id, languages=[sys.argv[2]])
+captions =''
+for caption in captions_yt:
+  # lets convert time form seconds to HH:MM:SS
+    start = caption['start']
+    end = caption['start'] + caption['duration']
+    start = f"{int(start/3600):02d}:{int((start%3600)/60):02d}:{int(start%60):02d}"
+    end = f"{int(end/3600):02d}:{int((end%3600)/60):02d}:{int(end%60):02d}"
+    captions += f"{start} --> {end}\n{caption['text']}\n\n"
 
 llm = OpenAI(temperature=0, openai_api_key=openai_api_key, model_name="gpt-3.5-turbo-instruct")
 
